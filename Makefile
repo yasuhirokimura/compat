@@ -22,6 +22,7 @@
 
 # make all/compile   Compile Elisp files without no-byte-compile marking
 # make force-compile Compile *all* Elisp files to check for warnings
+# make install       Install *.el, *.elc and info files
 # make clean         Delete compiled *.elc and *.info files
 # make test          Run the test suite
 # make check         Sanity checking of the test suite
@@ -29,7 +30,7 @@
 ### Code:
 
 .POSIX:
-.PHONY: all compile force-compile test clean check
+.PHONY: all compile force-compile install test clean check
 .SUFFIXES: .el .elc
 
 ifeq ($(CI),true)
@@ -49,6 +50,8 @@ BYTEC = compat-25.elc \
 	compat.elc \
 	compat-macs.elc \
 	compat-tests.elc
+PREFIX = $(shell $(EMACS) -Q --batch --eval \
+         "(princ (expand-file-name \"../../../..\" data-directory))")
 
 all: compile
 
@@ -58,6 +61,11 @@ force-compile:
 	@sed -i "s/ no-byte-compile: t;/ no-byte-compile: nil;/" $(BYTEC:.elc=.el)
 	@$(MAKE) compile
 	@sed -i "s/ no-byte-compile: nil;/ no-byte-compile: t;/" $(BYTEC:.elc=.el)
+
+install: compile compat.info
+	install -d $(PREFIX)/share/emacs/site-lisp/compat
+	install -m 644 -p *.el *.elc $(PREFIX)/share/emacs/site-lisp/compat
+	install -m 644 -p compat.info  $(PREFIX)/share/info
 
 test:
 	$(EMACS) --version
